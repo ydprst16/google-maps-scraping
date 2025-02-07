@@ -6,6 +6,7 @@ import os
 import itertools
 import openpyxl
 from datetime import datetime
+import threading
 
 # List of business categories
 business_category = [
@@ -100,6 +101,30 @@ class BusinessList:
             return True  # Business was added
         else:
             return False  # Business was a duplicate
+    
+    def __init__(self, save_at='output'):
+        self.business_list = []
+        self.save_at = save_at
+        self.seen_businesses = set()
+        self.auto_save_running = False  # Flag untuk auto-save thread
+
+    def auto_save(self, filename, business_type):
+        """Simpan data setiap 1 menit meskipun scraping belum selesai."""
+        if self.business_list:  # Hanya simpan jika ada data baru
+            print("\n[Auto-Save] Saving progress...")
+            self.save_to_excel(filename, business_type)
+            self.save_to_csv(filename, business_type=business_type)
+        
+        # Jadwalkan penyimpanan otomatis setiap 60 detik
+        self.auto_save_thread = threading.Timer(60, self.auto_save, args=(filename, business_type))
+        self.auto_save_thread.daemon = True  # Pastikan thread berhenti ketika program selesai
+        self.auto_save_thread.start()
+
+    def stop_auto_save(self):
+        """Hentikan proses auto-save saat scraping selesai."""
+        if hasattr(self, 'auto_save_thread'):
+            self.auto_save_thread.cancel()
+
 
 def extract_coordinates_from_url(url: str) -> tuple:
     """Extracts coordinates from URL."""
@@ -164,6 +189,9 @@ def main():
 
     # Initialize BusinessList
     business_list = BusinessList()
+
+    # Inisialisasi penyimpanan otomatis setiap 1 menit
+    business_list.auto_save(centralized_filename, selected_business_category[0])
 
     ###########
     # scraping
@@ -331,6 +359,9 @@ def main():
                 business_list.save_to_excel(centralized_filename, selected_business_type)
                 business_list.save_to_csv(centralized_filename, business_type=selected_business_type)
                 business_list.business_list.clear()
+
+        # Hentikan penyimpanan otomatis setelah scraping selesai
+        business_list.stop_auto_save()
 
         browser.close()
 
