@@ -10,18 +10,23 @@ import threading
 
 # List of business categories
 business_category = [
-    "School", "Masjid", "Gereja", "Hotel", "Kafe", 
-    "Restoran" , "Bengkel"
+    "Masjid", "Gereja", "Vihara", "Klenteng", "Hotel", "Kafe", 
+    "Restoran", "Apotek", "Bank", "Pabrik", "Bengkel", "Sekolah Dasar",
+    "Sekolah Menengah Pertama", "Sekolah Menengah Atas", "Perguruan Tinggi",
+    "Toko Kue", "Swalayan", "Penjahit", "Layanan Transportasi", "Rumah Sakit",
+    "Toko Elektronik", "Toko Ponsel", "Toko Bangunan", "Gas Station", "Klinik", "Praktek Dokter",
+    "Praktek Bidan"
 ]
 
 def extract_kelurahan_kecamatan(address: str) -> tuple:
     """
     Ekstrak kelurahan dan kecamatan dari alamat.
     """
-    match = re.search(r"([A-Za-z\s]+),\s*(Kec\.\s*[A-Za-z\s]+)", address)
+    #match = re.search(r"\s*([A-Za-z\s]+),\s*(Kec\.\s*[A-Za-z\s]+)", address)
+    match = re.search(r"\s*([\w\.]+\s*[A-Za-z\s]+?),\s*(Kec\.\s*[A-Za-z\s]+)", address) 
     
     if match:
-        kelurahan = match.group(1)
+        kelurahan = match.group(1).strip()
         kecamatan = match.group(2).replace("Kec.", "").strip()  # Menghapus kata 'Kec.' langsung
         
         return kelurahan, kecamatan
@@ -115,8 +120,8 @@ class BusinessList:
             self.save_to_excel(filename, business_type)
             self.save_to_csv(filename, business_type=business_type)
         
-        # Jadwalkan penyimpanan otomatis setiap 60 detik
-        self.auto_save_thread = threading.Timer(60, self.auto_save, args=(filename, business_type))
+        # Jadwalkan penyimpanan otomatis setiap 120 detik
+        self.auto_save_thread = threading.Timer(120, self.auto_save, args=(filename, business_type))
         self.auto_save_thread.daemon = True  # Pastikan thread berhenti ketika program selesai
         self.auto_save_thread.start()
 
@@ -208,7 +213,7 @@ def main():
             # Reset listings_scraped for this business type
             listings_scraped = 0
 
-            # Define a fixed list with only one city: Dumai, Riau
+            # Define a fixed list with only one city
             cities_states_original = [("Dumai", "Riau")]
 
             # Iterate through cities_states_original, which now only contains Dumai
@@ -243,7 +248,7 @@ def main():
                 print(f"Found {current_count} listings for {selected_business_type} in {selected_city}, {selected_state}.")
 
                 # Scroll through listings and wait for the elements to load
-                MAX_SCROLL_ATTEMPTS = 10
+                MAX_SCROLL_ATTEMPTS = 5
                 scroll_attempts = 0
                 previously_counted = current_count
 
